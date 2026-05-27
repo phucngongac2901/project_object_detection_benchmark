@@ -8,6 +8,12 @@ Dự án này là một hệ thống thử nghiệm và đánh giá hiệu năng
 
 Dự án sử dụng ONNX Runtime (hỗ trợ CUDA) để tăng tốc độ Inference trên GPU.
 
+> [!IMPORTANT]
+> **⚠️ Lưu ý về Phần cứng (Hardware Dependency):**
+> Kết quả benchmark (FPS, độ trễ Inference, độ ổn định của luồng) phụ thuộc rất lớn vào cấu hình phần cứng của thiết bị chạy thử nghiệm:
+> - **Card đồ họa (GPU)**: Dự án sử dụng ONNX Runtime được tăng tốc phần cứng bởi CUDA. Hiệu năng thực tế (FPS) sẽ dao động mạnh dựa trên sức mạnh của GPU (ví dụ các dòng card NVIDIA RTX, GTX) và phiên bản driver.
+> - **Vi xử lý (CPU) & Bộ nhớ (RAM)**: Ảnh hưởng trực tiếp đến tốc độ giải mã (decode) video của GStreamer/OpenCV cũng như hiệu quả điều phối giữa các luồng (Multi-threading).
+
 ## 📂 Cấu trúc dự án (Project Structure)
 - `test_opencv.py`: Script chạy pipeline với OpenCV.
 - `test_gstreamer_single_thread.py`: Script chạy pipeline với GStreamer đơn luồng.

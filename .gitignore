@@ -12,7 +12,7 @@ datasets/
 # Virtual environments
 .venv
 
-# Model files (nếu không muốn push)
+
 *.pth
 *.pt
 *.h5
@@ -22,20 +22,20 @@ models/
 checkpoints/
 *.onnx
 *.lock
-# Large files (tùy chọn)
+
 *.zip
 *.tar.gz
 *.rar
 
-# Bỏ qua các file script tạo slide (không cần push)
+
 generate_slide.py
 generate_architecture_slide.py
 
 
-# Bỏ qua các file video kết quả / test (tránh nặng git)
+
 *.mp4
 *.avi
 
-# Bỏ qua các file markdown tài liệu nội bộ (chỉ để xem cục bộ)
+
 *.md
 !README.md

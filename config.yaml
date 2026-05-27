@@ -1,0 +1,23 @@
+human_detect_model:
+    model_path: "face_det_w_model/human_detect.onnx"
+    input_width: 640
+    input_height: 640
+    score_threshold: 0.25
+    nms_threshold: 0.4
+    confidence_threshold: 0.7
+    providers: [CUDAExecutionProvider, CPUExecutionProvider]
+    classes: 
+        - "face"
+
+head_model:
+    model_path: "train_model/Train_3/det_wor_hel_v3.onnx"
+    input_width: 640
+    input_height: 640
+    score_threshold: 0.25
+    nms_threshold: 0.4
+    confidence_threshold: 0.7
+    providers: [CUDAExecutionProvider, CPUExecutionProvider]
+    classes: 
+        - "head" 
+        - "helmet"
+

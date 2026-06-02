@@ -30,7 +30,7 @@ import onnxruntime as ort
 # CONFIG
 # ============================================================
 base = os.getcwd()
-MODEL_PATH = os.path.join("train_model/Train_3", "det_wor_hel_v3.onnx")
+# MODEL_PATH sẽ được tự động load từ config.yaml ở bên dưới
 VIDEO_PATH = os.path.join(base, "test_video", "test.mp4")
 CONFIG_PATH = os.path.join(base, "config.yaml")
 LOG_DIR = os.path.join(base, "benchmark_logs")
@@ -44,12 +44,15 @@ def load_config(config_path):
         return yaml.safe_load(f)
 
 config = load_config(CONFIG_PATH)
-CLASSES = config['head_model']['classes']
-INPUT_WIDTH = config['head_model']['input_width']
-INPUT_HEIGHT = config['head_model']['input_height']
-CONFIDENCE_THRESHOLD = config['head_model']['confidence_threshold']
-NMS_THRESHOLD = config['head_model']['nms_threshold']
-COLORS = [(0, 0, 255), (0, 255, 0)]  # head: đỏ, helmet: xanh lá
+CURRENT_MODEL_KEY = 'helmet_model'
+
+MODEL_PATH = os.path.join(base, config[CURRENT_MODEL_KEY]['model_path'])
+CLASSES = config[CURRENT_MODEL_KEY]['classes']
+INPUT_WIDTH = config[CURRENT_MODEL_KEY]['input_width']
+INPUT_HEIGHT = config[CURRENT_MODEL_KEY]['input_height']
+CONFIDENCE_THRESHOLD = config[CURRENT_MODEL_KEY]['confidence_threshold']
+NMS_THRESHOLD = config[CURRENT_MODEL_KEY]['nms_threshold']
+COLORS = [(0, 255, 0), (0, 0, 255)]  # helmet: xanh lá, head: đỏ
 
 # ============================================================
 # OPENCV VIDEO CAPTURE
@@ -128,26 +131,36 @@ try:
 
         # ===== POSTPROCESS =====
         t_postprocess_start = time.perf_counter()
-        output = outputs[0].squeeze(0).T
+        output = outputs[0].squeeze(0).T  # Shape: (8400, 4 + num_classes)
+
+        class_scores = output[:, 4:]
+        class_ids_arr = np.argmax(class_scores, axis=1)
+        confidences_arr = class_scores[np.arange(len(class_scores)), class_ids_arr]
+
+        mask = confidences_arr >= CONFIDENCE_THRESHOLD
+        
+        filtered_output = output[mask]
+        confidences_arr = confidences_arr[mask]
+        class_ids_arr = class_ids_arr[mask]
 
         boxes = []
-        confidences = []
-        class_ids = []
+        if len(filtered_output) > 0:
+            cx = filtered_output[:, 0]
+            cy = filtered_output[:, 1]
+            w = filtered_output[:, 2]
+            h = filtered_output[:, 3]
 
-        for detection in output:
-            cx, cy, w, h = detection[:4]
-            class_scores = detection[4:]
-            class_id = np.argmax(class_scores)
-            confidence = class_scores[class_id]
+            x1 = ((cx - w / 2) * original_w / INPUT_WIDTH).astype(int)
+            y1 = ((cy - h / 2) * original_h / INPUT_HEIGHT).astype(int)
+            w_box = (w * original_w / INPUT_WIDTH).astype(int)
+            h_box = (h * original_h / INPUT_HEIGHT).astype(int)
 
-            if confidence >= CONFIDENCE_THRESHOLD:
-                x1 = int((cx - w / 2) * original_w / INPUT_WIDTH)
-                y1 = int((cy - h / 2) * original_h / INPUT_HEIGHT)
-                w_box = int(w * original_w / INPUT_WIDTH)
-                h_box = int(h * original_h / INPUT_HEIGHT)
-                boxes.append([x1, y1, w_box, h_box])
-                confidences.append(float(confidence))
-                class_ids.append(int(class_id))
+            boxes = np.column_stack((x1, y1, w_box, h_box)).tolist()
+            confidences = confidences_arr.tolist()
+            class_ids = class_ids_arr.tolist()
+        else:
+            confidences = []
+            class_ids = []
 
         indices = cv2.dnn.NMSBoxes(boxes, confidences, CONFIDENCE_THRESHOLD, NMS_THRESHOLD)
 
@@ -231,7 +244,12 @@ try:
         # ===== DISPLAY =====
         cv2.imshow("Detections [OpenCV]", frame)
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        # Tính toán thời gian chờ để đồng bộ hóa đúng tốc độ video gốc (Real-time)
+        target_frame_time_ms = 1000.0 / video_fps
+        elapsed_ms = (time.perf_counter() - t_pipeline_start) * 1000
+        delay_ms = max(1, int(round(target_frame_time_ms - elapsed_ms)))
+
+        if cv2.waitKey(delay_ms) & 0xFF == ord('q'):
             break
 
 finally:

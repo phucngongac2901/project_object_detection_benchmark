@@ -21,3 +21,13 @@ head_model:
         - "head" 
         - "helmet"
 
+helmet_model:
+    model_path: "train_model/Train_1/worker_hel_det_v8n.onnx"
+    input_width: 640
+    input_height: 640
+    score_threshold: 0.25
+    nms_threshold: 0.4
+    confidence_threshold: 0.7
+    providers: [CUDAExecutionProvider, CPUExecutionProvider]
+    classes: 
+        - "helmet"

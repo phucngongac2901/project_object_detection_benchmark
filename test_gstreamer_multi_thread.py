@@ -37,7 +37,7 @@ import onnxruntime as ort
 # CONFIG
 # ============================================================
 base = os.getcwd()
-MODEL_PATH = os.path.join(base, "train_model", "Train_3", "det_wor_hel_v3.onnx")
+MODEL_PATH = os.path.join(base, "train_model", "Train_1", "worker_hel_det_v8n.onnx")
 VIDEO_PATH = os.path.join(base, "test_video", "test.mp4")
 new_video_path = VIDEO_PATH.replace("\\", "/")
 CONFIG_PATH = os.path.join(base, "config.yaml")
@@ -75,7 +75,7 @@ pipeline_str = (
     "decodebin ! "
     "videoconvert ! "
     "video/x-raw,format=BGR ! "
-    "appsink name=sink emit-signals=true sync=true max-buffers=5 drop=true"
+    "appsink name=sink emit-signals=true sync=true max-buffers=8 drop=true"
 )
 pipeline = Gst.parse_launch(pipeline_str)
 sink = pipeline.get_by_name("sink")
@@ -180,26 +180,37 @@ def ai_worker():
 
         # ===== POSTPROCESS =====
         t_post = time.perf_counter()
-        output = outputs[0].squeeze(0).T
+        output = outputs[0].squeeze(0).T  # Shape: (8400, 4 + num_classes)
+
+        class_scores = output[:, 4:]
+        class_ids_arr = np.argmax(class_scores, axis=1)
+        confidences_arr = class_scores[np.arange(len(class_scores)), class_ids_arr]
+
+        # Lọc các bounding box có confidence >= threshold bằng NumPy mask (tăng tốc độ đáng kể)
+        mask = confidences_arr >= CONFIDENCE_THRESHOLD
+        
+        filtered_output = output[mask]
+        confidences_arr = confidences_arr[mask]
+        class_ids_arr = class_ids_arr[mask]
 
         boxes = []
-        confidences = []
-        class_ids = []
+        if len(filtered_output) > 0:
+            cx = filtered_output[:, 0]
+            cy = filtered_output[:, 1]
+            w = filtered_output[:, 2]
+            h = filtered_output[:, 3]
 
-        for detection in output:
-            cx, cy, w, h = detection[:4]
-            class_scores = detection[4:]
-            class_id = np.argmax(class_scores)
-            confidence = class_scores[class_id]
+            x1 = ((cx - w / 2) * original_w / INPUT_WIDTH).astype(int)
+            y1 = ((cy - h / 2) * original_h / INPUT_HEIGHT).astype(int)
+            w_box = (w * original_w / INPUT_WIDTH).astype(int)
+            h_box = (h * original_h / INPUT_HEIGHT).astype(int)
 
-            if confidence >= CONFIDENCE_THRESHOLD:
-                x1 = int((cx - w / 2) * original_w / INPUT_WIDTH)
-                y1 = int((cy - h / 2) * original_h / INPUT_HEIGHT)
-                w_box = int(w * original_w / INPUT_WIDTH)
-                h_box = int(h * original_h / INPUT_HEIGHT)
-                boxes.append([x1, y1, w_box, h_box])
-                confidences.append(float(confidence))
-                class_ids.append(int(class_id))
+            boxes = np.column_stack((x1, y1, w_box, h_box)).tolist()
+            confidences = confidences_arr.tolist()
+            class_ids = class_ids_arr.tolist()
+        else:
+            confidences = []
+            class_ids = []
 
         indices = cv2.dnn.NMSBoxes(boxes, confidences, CONFIDENCE_THRESHOLD, NMS_THRESHOLD)
 

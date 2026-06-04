@@ -285,6 +285,9 @@ def main():
     display_fps = 0.0
     display_fps_history = []
     total_display_frames = 0
+    cv2.namedWindow("Detections [Multi-Thread]", cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("Detections [Multi-Thread]", 960, 540)
+    cv2.moveWindow("Detections [Multi-Thread]", 200, 50)
 
     try:
         while not stop_event.is_set():
@@ -345,25 +348,25 @@ def main():
                 (tw, th), _ = cv2.getTextSize(fps_text, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)
                 cv2.rectangle(annotated_frame, (8, 8), (18 + tw, 18 + th + 10), (0, 0, 0), -1)
                 cv2.putText(annotated_frame, fps_text, (12, 12 + th),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2, cv2.LINE_AA)
 
                 # Vẽ timing breakdown dòng 2
                 detail_text = (f"Pre: {timing['preprocess_ms']:.1f}ms | "
                                f"Inf: {timing['inference_ms']:.1f}ms | "
                                f"Post: {timing['postprocess_ms']:.1f}ms")
-                (tw2, th2), _ = cv2.getTextSize(detail_text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+                (tw2, th2), _ = cv2.getTextSize(detail_text, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
                 y2 = 18 + th + 10
                 cv2.rectangle(annotated_frame, (8, y2), (18 + tw2, y2 + th2 + 10), (0, 0, 0), -1)
                 cv2.putText(annotated_frame, detail_text, (12, y2 + th2 + 4),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 2, cv2.LINE_AA)
 
                 # Method label dòng 3
                 method_text = "Method: GStreamer (Multi-Thread)"
-                (tw3, th3), _ = cv2.getTextSize(method_text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+                (tw3, th3), _ = cv2.getTextSize(method_text, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
                 y3 = y2 + th2 + 10
                 cv2.rectangle(annotated_frame, (8, y3), (18 + tw3, y3 + th3 + 10), (0, 0, 0), -1)
                 cv2.putText(annotated_frame, method_text, (12, y3 + th3 + 4),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 200, 255), 1)
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 200, 255), 2, cv2.LINE_AA)
 
                 cv2.imshow("Detections [Multi-Thread]", annotated_frame)
 

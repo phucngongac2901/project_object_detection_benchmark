@@ -99,7 +99,9 @@ display_fps_timer = time.perf_counter()
 display_fps_history = []
 
 print("[INFO] Bắt đầu xử lý...")
-
+cv2.namedWindow("Detections [OpenCV]", cv2.WINDOW_NORMAL)
+cv2.resizeWindow("Detections [OpenCV]", 960, 540)
+cv2.moveWindow("Detections [OpenCV]", 200, 50)
 try:
     while True:
         t_pipeline_start = time.perf_counter()
@@ -224,22 +226,22 @@ try:
         (tw, th), _ = cv2.getTextSize(fps_text, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)
         cv2.rectangle(frame, (8, 8), (18 + tw, 18 + th + 10), (0, 0, 0), -1)
         cv2.putText(frame, fps_text, (12, 12 + th),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2, cv2.LINE_AA)
 
         detail_text = (f"Decode: {decode_ms:.1f}ms | Pre: {preprocess_ms:.1f}ms | "
                        f"Inf: {inference_ms:.1f}ms | Post: {postprocess_ms:.1f}ms")
-        (tw2, th2), _ = cv2.getTextSize(detail_text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+        (tw2, th2), _ = cv2.getTextSize(detail_text, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
         y2 = 18 + th + 10
         cv2.rectangle(frame, (8, y2), (18 + tw2, y2 + th2 + 10), (0, 0, 0), -1)
         cv2.putText(frame, detail_text, (12, y2 + th2 + 4),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 2, cv2.LINE_AA)
 
         method_text = "Method: OpenCV (Pure)"
-        (tw3, th3), _ = cv2.getTextSize(method_text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+        (tw3, th3), _ = cv2.getTextSize(method_text, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
         y3 = y2 + th2 + 10
         cv2.rectangle(frame, (8, y3), (18 + tw3, y3 + th3 + 10), (0, 0, 0), -1)
         cv2.putText(frame, method_text, (12, y3 + th3 + 4),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 200, 255), 1)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 200, 255), 2, cv2.LINE_AA)
 
         # ===== DISPLAY =====
         cv2.imshow("Detections [OpenCV]", frame)
